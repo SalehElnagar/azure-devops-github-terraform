@@ -1,0 +1,140 @@
+parameters:
+  - name: operation
+    displayName: Terraform operation
+    type: string
+    default: apply
+    values:
+      - apply
+      - destroy
+
+trigger: none
+pr: none
+
+variables:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TERRAFORM_VERSION: "1.14.7"
+  TERRAFORM_LINUX_AMD64_SHA256: "e8bbcefea8015156e04e2a325cde37a0b2fb761728bda548e2fe3b8ad7c18c96"
+
+stages:
+  - stage: Terraform
+    displayName: Plan, review, and apply
+    lockBehavior: sequential
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+
+    jobs:
+      - job: Plan
+        displayName: Plan ${{ parameters.operation }}
+        pool:
+          vmImage: ubuntu-24.04
+        timeoutInMinutes: 20
+
+        steps:
+          - checkout: self
+            clean: true
+            persistCredentials: false
+
+          - bash: scripts/install-terraform.sh
+            displayName: Install pinned Terraform
+
+          - task: AzureCLI@2
+            displayName: Create the immutable plan
+            inputs:
+              azureSubscription: dual-pipeline-azdo-plan
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                cd infra
+                terraform init -input=false \
+                  -backend-config="resource_group_name=$(STATE_RESOURCE_GROUP)" \
+                  -backend-config="storage_account_name=$(STATE_STORAGE_ACCOUNT)" \
+                  -backend-config="container_name=$(AZURE_DEVOPS_STATE_CONTAINER)" \
+                  -backend-config="key=website.tfstate" \
+                  -backend-config="use_azuread_auth=true"
+                ../scripts/terraform-ci.sh plan \
+                  --operation "${{ parameters.operation }}" \
+                  --var-file ../environments/dev.tfvars.example \
+                  --target-resource-group "$(AZURE_DEVOPS_TARGET_RESOURCE_GROUP)" \
+                  --owner "$(RESOURCE_OWNER)" \
+                  --expires-on "$(EXPIRES_ON)" \
+                  --stack-name demo-azure-pipelines \
+                  --deployed-by azure-pipelines \
+                  --commit-sha "$(Build.SourceVersion)" \
+                  --plan-file tfplan \
+                  --metadata-file tfplan.metadata.json \
+                  --provider-lock-file .terraform.lock.hcl
+                terraform show -no-color tfplan >tfplan.txt
+                mkdir -p "$(Build.ArtifactStagingDirectory)/reviewed-plan"
+                cp tfplan tfplan.metadata.json tfplan.txt \
+                  "$(Build.ArtifactStagingDirectory)/reviewed-plan/"
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish the reviewed plan
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)/reviewed-plan
+              artifact: reviewed-plan
+              publishLocation: pipeline
+
+      - job: Review
+        displayName: Human review
+        dependsOn: Plan
+        pool: server
+        timeoutInMinutes: 1440
+
+        steps:
+          - task: ManualValidation@1
+            timeoutInMinutes: 1430
+            inputs:
+              notifyUsers: $(APPROVAL_NOTIFY_USERS)
+              approvers: $(APPROVAL_NOTIFY_USERS)
+              allowApproversToApproveTheirOwnRuns: true
+              instructions: >-
+                Review the Plan job output, operation ${{ parameters.operation }},
+                source commit $(Build.SourceVersion), and plan digest. Approve only
+                if the change matches the intended dev lifecycle.
+              onTimeout: reject
+
+      - job: Apply
+        displayName: Apply reviewed ${{ parameters.operation }} plan
+        dependsOn: Review
+        pool:
+          vmImage: ubuntu-24.04
+        timeoutInMinutes: 20
+
+        steps:
+          - checkout: self
+            clean: true
+            persistCredentials: false
+
+          - bash: scripts/install-terraform.sh
+            displayName: Install pinned Terraform
+
+          - task: DownloadPipelineArtifact@2
+            displayName: Download the reviewed plan
+            inputs:
+              artifact: reviewed-plan
+              path: $(Build.SourcesDirectory)/infra
+
+          - task: AzureCLI@2
+            displayName: Verify and apply only the reviewed plan
+            inputs:
+              azureSubscription: dual-pipeline-azdo-apply
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                cd infra
+                terraform init -input=false \
+                  -backend-config="resource_group_name=$(STATE_RESOURCE_GROUP)" \
+                  -backend-config="storage_account_name=$(STATE_STORAGE_ACCOUNT)" \
+                  -backend-config="container_name=$(AZURE_DEVOPS_STATE_CONTAINER)" \
+                  -backend-config="key=website.tfstate" \
+                  -backend-config="use_azuread_auth=true"
+                ../scripts/terraform-ci.sh apply \
+                  --plan-file tfplan \
+                  --metadata-file tfplan.metadata.json \
+                  --provider-lock-file .terraform.lock.hcl \
+                  --expected-operation "${{ parameters.operation }}" \
+                  --expected-commit "$(Build.SourceVersion)" \
+                  --max-plan-age-seconds 86400

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Azure DevOps vs. GitHub Is the Wrong Question</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #08111f; color: #eff6ff; }
+      main { width: min(42rem, calc(100% - 3rem)); padding: 3rem; border: 1px solid #263b59; border-radius: 1.5rem; background: #101d31; box-shadow: 0 1.5rem 4rem #0007; }
+      p { color: #b8c7dc; }
+      dl { display: grid; grid-template-columns: max-content 1fr; gap: .75rem 1.25rem; margin-top: 2rem; }
+      dt { color: #79c0ff; font-weight: 700; }
+      dd { margin: 0; overflow-wrap: anywhere; }
+      .eyebrow { color: #76e3b4; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Verified Terraform deployment</p>
+      <h1>Azure DevOps vs. GitHub Is the Wrong Question</h1>
+      <p>Repository hosting and pipeline orchestration are separate architectural decisions—and the controls should prove it.</p>
+      <dl>
+        <dt>Environment</dt><dd>${environment}</dd>
+        <dt>Stack</dt><dd>${stack_name}</dd>
+        <dt>Deployed by</dt><dd>${deployed_by}</dd>
+        <dt>Commit</dt><dd>${commit_sha}</dd>
+        <dt>Infrastructure</dt><dd>Terraform</dd>
+      </dl>
+    </main>
+  </body>
+</html>

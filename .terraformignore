@@ -1,0 +1,13 @@
+.git/
+.github/
+.agents/
+evidence/
+tests/
+**/.terraform/
+*.tfstate*
+*.tfplan*
+*.auto.tfvars
+*.tfvars
+!*.tfvars.example
+.env*
+local/

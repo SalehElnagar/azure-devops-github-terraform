@@ -1,0 +1,9 @@
+environment = "dev"
+owner       = "platform-team"
+expires_on  = "2026-07-31"
+
+# Supplied by the owning pipeline:
+# target_resource_group_name
+# stack_name
+# deployed_by
+# commit_sha

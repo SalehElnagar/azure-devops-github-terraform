@@ -1,0 +1,45 @@
+# Agent-local integration packages
+.agents/
+
+# Terraform runtime and sensitive artifacts
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+*.plan-metadata.json
+*.auto.tfvars
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Live evidence and local identifiers
+evidence/raw/
+evidence/private/
+.env
+.env.*
+!.env.example
+local/
+
+# Python and test artifacts
+__pycache__/
+*.py[cod]
+.coverage
+.pytest_cache/
+.venv/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Generated scratch
+output/
+*.tmp

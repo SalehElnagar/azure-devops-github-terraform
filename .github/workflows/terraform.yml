@@ -1,0 +1,169 @@
+name: Terraform lifecycle
+
+on:
+  workflow_dispatch:
+    #checkov:skip=CKV_GHA_7:The only input is a bounded apply/destroy enum bound into signed plan metadata.
+    inputs:
+      operation:
+        description: Apply the desired configuration or destroy it
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-github-actions-dev
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  plan:
+    name: Plan ${{ inputs.operation }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the requested commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - name: Install Terraform 1.14.7
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e
+        with:
+          terraform_version: 1.14.7
+          terraform_wrapper: false
+
+      - name: Sign in with the plan identity
+        uses: azure/login@2dd0bbf4064d5a1812889dc200bb8eed2597f82a
+        with:
+          client-id: ${{ vars.AZURE_GITHUB_PLAN_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Initialize the isolated state backend
+        working-directory: infra
+        env:
+          STATE_RESOURCE_GROUP: ${{ vars.STATE_RESOURCE_GROUP }}
+          STATE_STORAGE_ACCOUNT: ${{ vars.STATE_STORAGE_ACCOUNT }}
+          STATE_CONTAINER: ${{ vars.GHA_STATE_CONTAINER }}
+        run: |
+          terraform init -input=false \
+            -backend-config="resource_group_name=$STATE_RESOURCE_GROUP" \
+            -backend-config="storage_account_name=$STATE_STORAGE_ACCOUNT" \
+            -backend-config="container_name=$STATE_CONTAINER" \
+            -backend-config="key=website.tfstate" \
+            -backend-config="use_azuread_auth=true"
+
+      - name: Create the immutable plan and integrity metadata
+        working-directory: infra
+        env:
+          OPERATION: ${{ inputs.operation }}
+          TARGET_RESOURCE_GROUP: ${{ vars.GHA_TARGET_RESOURCE_GROUP }}
+          RESOURCE_OWNER: ${{ vars.RESOURCE_OWNER }}
+          RESOURCE_EXPIRY: ${{ vars.EXPIRES_ON }}
+        run: |
+          ../scripts/terraform-ci.sh plan \
+            --operation "$OPERATION" \
+            --var-file ../environments/dev.tfvars.example \
+            --target-resource-group "$TARGET_RESOURCE_GROUP" \
+            --owner "$RESOURCE_OWNER" \
+            --expires-on "$RESOURCE_EXPIRY" \
+            --stack-name demo-github-actions \
+            --deployed-by github-actions \
+            --commit-sha "$GITHUB_SHA" \
+            --plan-file tfplan \
+            --metadata-file tfplan.metadata.json \
+            --provider-lock-file .terraform.lock.hcl
+          terraform show -no-color tfplan >tfplan.txt
+      - name: Summarize the reviewed plan
+        working-directory: infra
+        env:
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          {
+            echo '### Terraform plan'
+            echo
+            printf '%s\n' "- Operation: \`$OPERATION\`"
+            echo "- Commit: \`$GITHUB_SHA\`"
+            echo "- Digest: \`$(jq -r .plan_sha256 tfplan.metadata.json)\`"
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the saved plan
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        with:
+          name: reviewed-plan
+          path: |
+            infra/tfplan
+            infra/tfplan.metadata.json
+            infra/tfplan.txt
+          if-no-files-found: error
+          retention-days: 1
+
+  apply:
+    name: Apply reviewed ${{ inputs.operation }} plan
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: ${{ inputs.operation == 'destroy' && 'dev-destroy' || 'dev' }}
+
+    steps:
+      - name: Check out the same commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - name: Install Terraform 1.14.7
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e
+        with:
+          terraform_version: 1.14.7
+          terraform_wrapper: false
+
+      - name: Download the reviewed plan
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: reviewed-plan
+          path: infra
+
+      - name: Sign in with the apply identity
+        uses: azure/login@2dd0bbf4064d5a1812889dc200bb8eed2597f82a
+        with:
+          client-id: ${{ vars.AZURE_GITHUB_APPLY_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Initialize the same isolated state backend
+        working-directory: infra
+        env:
+          STATE_RESOURCE_GROUP: ${{ vars.STATE_RESOURCE_GROUP }}
+          STATE_STORAGE_ACCOUNT: ${{ vars.STATE_STORAGE_ACCOUNT }}
+          STATE_CONTAINER: ${{ vars.GHA_STATE_CONTAINER }}
+        run: |
+          terraform init -input=false \
+            -backend-config="resource_group_name=$STATE_RESOURCE_GROUP" \
+            -backend-config="storage_account_name=$STATE_STORAGE_ACCOUNT" \
+            -backend-config="container_name=$STATE_CONTAINER" \
+            -backend-config="key=website.tfstate" \
+            -backend-config="use_azuread_auth=true"
+
+      - name: Verify and apply only the reviewed plan
+        working-directory: infra
+        env:
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          ../scripts/terraform-ci.sh apply \
+            --plan-file tfplan \
+            --metadata-file tfplan.metadata.json \
+            --provider-lock-file .terraform.lock.hcl \
+            --expected-operation "$OPERATION" \
+            --expected-commit "$GITHUB_SHA" \
+            --max-plan-age-seconds 86400
