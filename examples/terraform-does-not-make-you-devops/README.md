@@ -80,6 +80,5 @@ Do not commit:
 
 ## Source repository
 
-The reviewed example is available on the
-[`codex/terraform-not-devops-article` branch](https://github.com/SalehElnagar/azure-devops-github-terraform/tree/codex/terraform-not-devops-article/examples/terraform-does-not-make-you-devops).
-After merge, the equivalent `main` branch path becomes the canonical location.
+The example is maintained in
+[`SalehElnagar/azure-devops-github-terraform`](https://github.com/SalehElnagar/azure-devops-github-terraform/tree/main/examples/terraform-does-not-make-you-devops).
