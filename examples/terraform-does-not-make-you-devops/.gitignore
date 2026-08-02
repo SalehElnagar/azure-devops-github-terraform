@@ -1,0 +1,15 @@
+.terragrunt-cache/
+**/.terragrunt-cache/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+*.auto.tfvars
+*.tfvars
+!*.tfvars.example
+.env
+.env.*
+evidence/local/
+evidence/raw/
+evidence/private/

@@ -1,0 +1,6 @@
+owner      = "platform-team"
+expires_on = "2026-08-31"
+
+# Set a unique 4-12 character lowercase prefix before a live test.
+name_prefix = "tndstate"
+location    = "canadacentral"
