@@ -15,3 +15,7 @@ Evidence claims use these levels:
 
 No claim may be upgraded merely because a command was documented or expected to
 work.
+
+The publishable outcome summary is recorded in
+[`validation-summary.md`](validation-summary.md). It reports bounded results and
+tool versions without including raw Azure or Terraform artifacts.

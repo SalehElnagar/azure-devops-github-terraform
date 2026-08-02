@@ -187,9 +187,53 @@
       color: var(--purple);
     }
 
+    .question-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+
+    .question-card {
+      padding: 1.35rem;
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      background: rgba(16, 23, 42, 0.86);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.14);
+    }
+
+    .question-card .scope-number {
+      display: inline-grid;
+      width: 2rem;
+      height: 2rem;
+      margin-bottom: 1rem;
+      border-radius: 50%;
+      place-items: center;
+      background: rgba(143, 118, 255, 0.18);
+      color: var(--purple);
+      font-weight: 800;
+    }
+
+    .question-card h3 {
+      margin: 0 0 0.65rem;
+      font-size: 1.12rem;
+    }
+
+    .question-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
     .diagram {
       overflow-x: auto;
       padding: 1.25rem;
+    }
+
+    .diagram:focus-visible,
+    .comparison:focus-visible {
+      outline: 3px solid var(--cyan);
+      outline-offset: 3px;
     }
 
     .diagram figcaption {
@@ -323,6 +367,18 @@
       margin: 0.55rem 0;
     }
 
+    .operating-checklist {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem 2rem;
+      margin: 1.25rem 0 0;
+      padding-left: 1.25rem;
+    }
+
+    .operating-checklist li {
+      padding-left: 0.25rem;
+    }
+
     footer {
       margin-top: 5rem;
       padding: 2rem 0 4rem;
@@ -340,7 +396,9 @@
         padding-top: 3.5rem;
       }
 
-      .evidence-grid {
+      .evidence-grid,
+      .question-grid,
+      .operating-checklist {
         grid-template-columns: 1fr;
       }
 
@@ -380,6 +438,7 @@
       .diagram,
       .comparison,
       .evidence-grid,
+      .question-card,
       pre {
         border-color: #cbd5e1;
         background: white;
@@ -416,8 +475,8 @@
     <h1><span>Terraform</span> Does Not Make You DevOps</h1>
     <p class="dek">
       The same infrastructure-as-code engine can support a ticket queue or a
-      platform operating model. The difference is not the syntax. It is the
-      delivery system we build around change.
+      platform operating model. A valid plan explains what may change. It does
+      not show whether teams can change it safely.
     </p>
     <ul class="tags" aria-label="Article topics">
       <li>Azure</li>
@@ -430,30 +489,26 @@
   </header>
 
   <main>
-    <aside class="callout">
-      <p><strong>Evidence status for this working draft</strong></p>
-      <p>
-        The Azure state backend was applied and observed in an isolated
-        non-production subscription. Both workload paths completed authenticated
-        Azure plans. Their workload applies and teardown lifecycle have not been
-        observed, so this draft does not claim that they have.
-      </p>
-    </aside>
-
     <section>
-      <h2>The question starts in the wrong place</h2>
+      <h2>A green plan answers a smaller question</h2>
       <p>
-        One of the questions I hear most often from cloud engineers is:
+        An authenticated Terraform plan is useful evidence. It shows that
+        Terraform and its providers can evaluate a proposed configuration against
+        the selected target. It does not prove that Azure deployed the resources,
+        that production approval is well designed, that telemetry reaches an
+        owner, or that recovery has been rehearsed.
+      </p>
+      <p>
+        That gap sits behind one of the questions I hear most often from cloud
+        engineers:
         “Will learning Terraform make me a DevOps engineer?”
       </p>
       <p>My honest answer is: not necessarily.</p>
       <p>
-        Terraform is valuable engineering machinery. It builds a dependency
-        graph, compares desired and current state, produces a plan, and executes
-        approved changes. But it cannot decide how teams should consume
-        infrastructure, which risks require approval, who owns a service after
-        deployment, what signals define health, or how the organization learns
-        from failure.
+        This is not a comparison of seniority, capability, or job titles. A cloud
+        engineer can work with a mature DevSecOps mindset. Someone titled
+        “DevOps Engineer” can still preserve ticket queues, one-time provisioning,
+        and manual handoffs. The comparison is between operating models.
       </p>
       <div class="callout thesis">
         <p>
@@ -463,6 +518,14 @@
         </p>
       </div>
       <p>
+        Terraform is valuable engineering machinery. It builds a dependency
+        graph, compares desired and current state, produces a plan, and executes
+        approved changes. But it cannot decide how teams should consume
+        infrastructure, which risks require approval, who owns a service after
+        deployment, what signals define health, or how the organization learns
+        from failure.
+      </p>
+      <p>
         Terragrunt does not automatically supply that operating model either. It
         can help centralize state and configuration conventions. The DevOps value
         still comes from the decisions encoded around it.
@@ -470,7 +533,60 @@
     </section>
 
     <section>
-      <h2>A controlled illustration: one module, two delivery paths</h2>
+      <h2>Three questions define the engineering scope</h2>
+      <p>
+        Before selecting a tool, separate the work into three questions. Each one
+        expands the definition of success.
+      </p>
+
+      <div class="question-grid">
+        <article class="question-card">
+          <span class="scope-number" aria-hidden="true">1</span>
+          <h3>What must exist in Azure?</h3>
+          <p>
+            Resources, topology, identity boundaries, secure defaults, and the
+            relationships between them.
+          </p>
+        </article>
+        <article class="question-card">
+          <span class="scope-number" aria-hidden="true">2</span>
+          <h3>How can teams change it safely?</h3>
+          <p>
+            Consumer interfaces, state boundaries, review, promotion, approval,
+            and an auditable path to production.
+          </p>
+        </article>
+        <article class="question-card">
+          <span class="scope-number" aria-hidden="true">3</span>
+          <h3>How does control persist?</h3>
+          <p>
+            Policy, telemetry, ownership, drift response, recovery, cost, and
+            evidence throughout the lifecycle.
+          </p>
+        </article>
+      </div>
+
+      <p>
+        Terraform can encode decisions across all three questions, especially the
+        desired infrastructure state. Terragrunt can help compose those decisions
+        across environments and state boundaries. Neither tool chooses acceptable
+        risk, assigns ownership, grants approval authority, or closes the feedback
+        loop. Those are engineering and organizational decisions.
+      </p>
+    </section>
+
+    <aside class="callout">
+      <p><strong>Evidence status for this article</strong></p>
+      <p>
+        The Azure state backend was applied and observed in an isolated
+        non-production subscription. Both workload paths completed authenticated
+        Azure plans. Their workload applies and teardown lifecycle have not been
+        observed, so this article does not claim that they have.
+      </p>
+    </aside>
+
+    <section>
+      <h2>One module, two operating contracts</h2>
       <p>
         To make the comparison concrete, I built one reusable Terraform module
         and consumed it in two different ways. Both paths use the same Azure
@@ -484,43 +600,48 @@
         configured operating-capability delta visible.
       </p>
       <p>
-        This is not evidence that Terragrunt causes DevOps. Direct Terraform can
-        encode the complete platform contract, while Terragrunt can still sit
-        behind tickets and manual handoffs. I use Terragrunt here as the live
-        configuration layer because it makes the state and environment contract
-        explicit.
+        Treat Terragrunt here as the composition layer, not the cause. Direct
+        Terraform can encode the complete platform contract, while Terragrunt can
+        also support a request-oriented model. I use it here because it makes the
+        state and environment contract explicit.
       </p>
 
-      <figure class="diagram">
+      <figure
+        class="diagram"
+        role="region"
+        tabindex="0"
+        aria-label="Scrollable comparison of two declared infrastructure operating contracts"
+      >
         <figcaption>
-          The tool and secure core are shared. The operating contract is not.
+          Constructed from the declared configurations: the secure Azure core is
+          shared; organizational behavior is not live-observed.
         </figcaption>
         <div
           class="mermaid"
           role="img"
-          aria-label="One Terraform module branches into a ticket-driven direct Terraform path and a governed Terragrunt platform path."
+          aria-label="One shared Terraform module branches into a request-oriented direct configuration and a Terragrunt platform configuration."
         >
 flowchart TB
-  CORE["One reviewed Terraform module<br/>Same secure Azure core"]
+  CORE["One reviewed Terraform module<br/>Resource group · VNet/subnet · NSG<br/>Private keyless storage · Private endpoint/DNS"]
 
-  subgraph TICKET["Ticket-driven direct Terraform delivery"]
+  subgraph TICKET["Request-oriented direct Terraform configuration"]
     direction TB
-    T1["Ticket or one-time request"]
+    T1["Request-scoped inputs"]
     T2["Direct Terraform plan"]
     T3["Local state"]
     T4["Secure resources proposed"]
-    T5["Manual ownership handoff"]
+    T5["Shared ownership path not declared"]
     T6["No declared observability,<br/>recovery, or deletion-protection contract"]
     T1 --> T2 --> T3 --> T4 --> T5 --> T6
   end
 
-  subgraph PLATFORM["Terragrunt platform operating model"]
+  subgraph PLATFORM["Terragrunt platform configuration"]
     direction TB
     P1["Version-controlled environment contract"]
     P2["Environment-relative Azure Blob state<br/>using Microsoft Entra authorization"]
-    P3["Tested and reviewable plan"]
-    P4["Secure resources plus<br/>operational capabilities"]
-    P5["Ownership, observability,<br/>recovery, and protected teardown"]
+    P3["Tested and authenticated plan"]
+    P4["Secure resources plus planned<br/>operational capabilities"]
+    P5["Declared ownership metadata,<br/>observability, recovery, and protected teardown"]
     P1 --> P2 --> P3 --> P4 --> P5
   end
 
@@ -564,8 +685,9 @@ flowchart TB
       <p>
         What it does not define is just as important: there is no shared remote
         state contract, observability sink, diagnostic route, recovery policy, or
-        deletion protection. Those concerns are left for a later ticket or a
-        manual handoff. The plan reflected the provisioning request exactly as
+        deletion protection. The configuration does not specify how those
+        concerns will be delivered or owned; they require an additional change or
+        workflow. The plan reflected the provisioning request exactly as
         configured.
       </p>
     </section>
@@ -624,7 +746,12 @@ flowchart TB
         management lock.
       </p>
 
-      <div class="comparison">
+      <div
+        class="comparison"
+        role="region"
+        tabindex="0"
+        aria-label="Scrollable comparison table for the direct Terraform and Terragrunt platform paths"
+      >
         <table>
           <caption class="visually-hidden">
             Comparison of the direct Terraform and Terragrunt platform delivery paths
@@ -692,9 +819,15 @@ flowchart TB
         The larger value is the delivery path those controls participate in:
       </p>
 
-      <figure class="diagram">
+      <figure
+        class="diagram"
+        role="region"
+        tabindex="0"
+        aria-label="Scrollable reference operating model for controlled infrastructure change"
+      >
         <figcaption>
-          Terraform executes one part of a wider, closed-loop delivery system.
+          Reference operating model: Terraform executes one part of a wider,
+          closed-loop delivery system.
         </figcaption>
         <div
           class="mermaid"
@@ -703,7 +836,7 @@ flowchart TB
         >
 flowchart LR
   C["Engineering change"] --> V["Version control"]
-  V --> P["Deterministic plan"]
+  V --> P["Saved, reviewable plan"]
   P --> G{"Tests, security,<br/>and policy gates"}
   G -->|"fail"| V
   G -->|"pass"| A{"Production approval"}
@@ -721,11 +854,20 @@ flowchart LR
         </div>
       </figure>
 
+      <p>
+        This loop is a target operating model, not a claim that the current lab
+        executes every stage. The repository demonstrates the module contract,
+        local checks, saved planning, and keyless backend state. It does not yet
+        contain an example-specific pull-request policy gate or a live
+        drift-remediation exercise.
+      </p>
+
       <h3>1. A product contract instead of a ticket response</h3>
       <p>
-        Teams consume a documented capability with inputs, outputs, defaults,
-        and ownership. They do not need to rediscover the implementation through
-        a sequence of infrastructure tickets.
+        The cloud resource is not the finished product. Teams consume a
+        documented capability with inputs, outputs, defaults, and ownership.
+        They do not need to rediscover the implementation through a sequence of
+        infrastructure tickets.
       </p>
 
       <h3>2. Reviewable change instead of one-time execution</h3>
@@ -763,9 +905,31 @@ flowchart LR
       <p>
         Recovery is not an optimistic statement in a runbook. It is encoded in
         versioning and retention settings, then should be verified through tests
-        and live exercises. The live recovery exercise for this draft remains
+        and live exercises. The live recovery exercise for this article remains
         pending. Deletion protection is paired with an explicit teardown phase so
         that safety does not make cleanup an improvised exception.
+      </p>
+    </section>
+
+    <section>
+      <h2>Before calling it a platform capability</h2>
+      <p>
+        Use these questions as an operating-model review, not as a shopping list
+        of tools:
+      </p>
+      <div class="callout thesis">
+        <ul class="operating-checklist">
+          <li><strong>Consumption:</strong> Are the supported inputs, outputs, defaults, and owner explicit?</li>
+          <li><strong>Change:</strong> Is every target reached through reviewed, auditable evidence?</li>
+          <li><strong>Security:</strong> Are identity and fail-closed guardrails part of every authorized path?</li>
+          <li><strong>Operation:</strong> Does telemetry reach a named owner with a defined response?</li>
+          <li><strong>Recovery:</strong> Are drift, restore, and teardown exercised rather than assumed?</li>
+          <li><strong>Economics:</strong> Is cost ownership visible, and is there a tested exit path?</li>
+        </ul>
+      </div>
+      <p>
+        When those answers remain implicit, Terraform has not failed. The
+        operating model is simply unfinished.
       </p>
     </section>
 
@@ -806,14 +970,11 @@ flowchart LR
     </section>
 
     <section>
-      <h2>Terraform is not the problem—and it is not the answer</h2>
+      <h2>Judge the delivery system, not the tool</h2>
       <p>
-        The direct path and the platform path both use Terraform. The platform
-        path also uses Terragrunt. Those facts do not decide whether the outcome
-        is DevOps.
-      </p>
-      <p>
-        The deciding questions are operational:
+        The direct path and the platform path both use Terraform; the platform
+        path also uses Terragrunt. Maturity becomes visible in the operational
+        questions:
       </p>
       <ul>
         <li>Can a team consume the capability without opening a bespoke ticket?</li>
@@ -827,12 +988,11 @@ flowchart LR
         executable—and exposes whether an operating model exists behind them.
       </blockquote>
       <p>
-        A cloud engineer can demonstrate a strong DevSecOps mindset using
-        Terraform, Terragrunt, pipelines, and policy. Someone with “DevOps” in
-        their title can use the same tools while preserving ticket queues,
-        one-time provisioning, and manual handoffs. The distinction is not the
-        job title or the file extension. It is how the organization designs and
-        operates change.
+        Evaluate the path a change travels: who proposes it, what evidence is
+        produced, who approves it, who observes the result, and how feedback
+        changes the next version. If those responsibilities remain implicit or
+        live in one engineer’s memory, adding Terraform, Terragrunt, or YAML does
+        not supply the missing system.
       </p>
     </section>
 
@@ -848,9 +1008,25 @@ flowchart LR
       </p>
       <p>
         The implementation is pinned to Terraform 1.14.7, Terragrunt 1.0.4,
-        AzureRM 4.81.0, and Random 3.9.0. The local gate ran six native Terraform
-        test runs, eight repository-contract tests, strict Terragrunt input
-        validation, ShellCheck, Gitleaks, Checkov, and Trivy.
+        AzureRM 4.81.0, and Random 3.9.0. The recorded validation run included six
+        native Terraform test runs, eight repository-contract tests, strict
+        Terragrunt input validation, and ShellCheck. Gitleaks reported no leaks;
+        Checkov reported 18 passed checks, no failures, and six documented skips;
+        Trivy reported no unsuppressed high- or critical-severity findings. The
+        <a
+          href="https://github.com/SalehElnagar/azure-devops-github-terraform/blob/codex/terraform-not-devops-article/examples/terraform-does-not-make-you-devops/evidence/validation-summary.md"
+        >sanitized validation summary</a> records the scope and limitations.
+      </p>
+      <p>
+        The lab is disposable, not free. Because the workload resources were not
+        applied for a measured interval, this article does not publish a dollar
+        estimate. Estimate region-specific cost in the
+        <a href="https://azure.microsoft.com/en-us/pricing/calculator/">Azure Pricing Calculator</a>
+        before applying it, and follow the
+        <a
+          href="https://github.com/SalehElnagar/azure-devops-github-terraform/blob/codex/terraform-not-devops-article/examples/terraform-does-not-make-you-devops/RUNBOOK.md"
+        >reviewed teardown procedure</a> when finished. Expiry tags make ownership
+        visible; they do not delete resources automatically.
       </p>
     </section>
 
@@ -878,6 +1054,11 @@ flowchart LR
           </a>
         </li>
         <li>
+          <a href="https://developer.hashicorp.com/terraform/cli/commands/plan">
+            HashiCorp Terraform plan command
+          </a>
+        </li>
+        <li>
           <a href="https://developer.hashicorp.com/terraform/language/tests">
             HashiCorp Terraform language tests
           </a>
@@ -897,13 +1078,18 @@ flowchart LR
             Terragrunt HCL block reference
           </a>
         </li>
+        <li>
+          <a href="https://azure.microsoft.com/en-us/pricing/calculator/">
+            Microsoft Azure Pricing Calculator
+          </a>
+        </li>
       </ul>
     </section>
   </main>
 
   <footer>
     <p>
-      Working HTML draft. Evidence statements are intentionally bounded to what
+      HTML source edition. Evidence statements are intentionally bounded to what
       was observed for the cited source revision and isolated Azure target.
     </p>
   </footer>

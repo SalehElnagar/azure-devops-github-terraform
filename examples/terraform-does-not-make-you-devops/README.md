@@ -56,6 +56,20 @@ They must target an isolated non-production subscription, use unique prefixes an
 short expiry tags, and be executed from reviewed saved plans. See `RUNBOOK.md` once
 the implementation candidate has passed local validation.
 
+## Cost and cleanup
+
+This lab is intentionally small and disposable, but it is not guaranteed to be
+free. The article does not publish a measured dollar estimate because the
+workload resources were not applied for a representative interval. Estimate
+region-specific cost with the
+[Azure Pricing Calculator](https://azure.microsoft.com/en-us/pricing/calculator/)
+before applying it. Consumption, retention, region, and the time resources remain
+deployed can all affect the result.
+
+Follow the reviewed teardown sequence in `RUNBOOK.md` when the exercise is complete.
+The `expires_on` tag makes ownership and cleanup intent visible; Azure does not
+delete these resources automatically when that date is reached.
+
 Do not commit:
 
 - Terraform state or saved plans;
@@ -66,6 +80,6 @@ Do not commit:
 
 ## Source repository
 
-This example is maintained in
-[`SalehElnagar/azure-devops-github-terraform`](https://github.com/SalehElnagar/azure-devops-github-terraform/tree/main/examples/terraform-does-not-make-you-devops).
-The link becomes authoritative only after this directory is reviewed and pushed.
+The reviewed example is available on the
+[`codex/terraform-not-devops-article` branch](https://github.com/SalehElnagar/azure-devops-github-terraform/tree/codex/terraform-not-devops-article/examples/terraform-does-not-make-you-devops).
+After merge, the equivalent `main` branch path becomes the canonical location.
